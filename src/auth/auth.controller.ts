@@ -1,11 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
+import { SignupDto } from '../dto/signup.dto';
+import { LoginDto } from '../dto/login.dto';
 @Controller('auth')
 export class AuthController {
     // Define your authentication routes and methods here
-    constructor(private readonly authService: AuthService) {}
+    constructor(private readonly authService: AuthService) { }
 
     @Post('signup')
     async signup(@Body() signupDto: SignupDto) {
@@ -18,4 +18,10 @@ export class AuthController {
         // Handle user login
         return this.authService.login(loginDto);
     }
+
+    @Post('refresh')
+    async refresh(@Body('refreshToken') refreshToken: string) {
+        return this.authService.refresh(refreshToken);
+    }
+
 }

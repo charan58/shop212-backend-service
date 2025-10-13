@@ -7,20 +7,20 @@ import {
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
+import { SignupDto } from '../dto/signup.dto';
+import { LoginDto } from '../dto/login.dto';
 import { User } from '../types/user.type';
 import { isValidEmail, isValidPhoneNumber } from '../common/utils/validators';
 import { generateId } from '../common/utils/generators';
-
+import { JwtPayload } from '../types/jwt-payload.type';
 @Injectable()
 export class AuthService {
   private users: User[] = []; // Replace with real DB in production
 
   constructor(
-    private readonly configService: ConfigService, 
+    private readonly configService: ConfigService,
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
   async signup(signupDto: SignupDto) {
     const { firstName, lastName, email, password, phoneNumber } = signupDto;
@@ -43,13 +43,17 @@ export class AuthService {
 
     const saltingRounds = parseInt(this.configService.get<string>('SALTING_ROUNDS') ?? '10');
     const hashedPassword = await bcrypt.hash(password, saltingRounds);
-
+    const userId = generateId();
+    const accessToken = await this.signAccessToken(userId, email, fullName);
+    const refreshToken = await this.signRefreshToken(userId, email, fullName);
     const newUser: User = {
-      id: generateId(),
+      id: userId,
       fullName,
       email,
       phoneNumber,
       password: hashedPassword,
+      accessToken,
+      refreshToken
     };
 
     this.users.push(newUser);
@@ -59,15 +63,36 @@ export class AuthService {
       user: {
         id: newUser.id,
       },
+      accessToken,
+      refreshToken
     };
   }
 
-  private async signToken(userId: number, email: string, fullName: string): Promise<string> {
-    const payload = { sub: userId, email, fullName };
+  private getJwtExpiresIn(): number {
+    return parseInt(this.configService.get<string>('JWT_EXPIRES_IN') ?? '86400', 10);
+  }
+
+  private getJwtRefreshExpiresIn(): number {
+    return parseInt(this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '604800', 10);
+  }
+
+
+
+  private async signAccessToken(userId: number, email: string, fullName: string): Promise<string> {
+    const payload: JwtPayload = { sub: userId, email, fullName };
+
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('JWT_SECRET')!,
+      expiresIn: this.getJwtExpiresIn()
+    });
+  }
+
+  private async signRefreshToken(userId: number, email: string, fullName: string): Promise<string> {
+    const payload: JwtPayload = { sub: userId, email, fullName };
 
     const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d',
+      expiresIn: this.getJwtRefreshExpiresIn()
     });
     return token;
   }
@@ -96,11 +121,41 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = await this.signToken(user.id, user.email, user.fullName);
+    const accessToken = await this.signAccessToken(user.id, user.email, user.fullName);
+    const refreshToken = await this.signRefreshToken(user.id, user.email, user.fullName);
+
 
     return {
       message: 'Login successful',
-      token: token
+      accessToken,
+      refreshToken
     };
+  }
+
+  async refresh(refreshToken: string){
+    try {
+      const decoded = await this.jwtService.verifyAsync<JwtPayload>(
+        refreshToken,
+        {
+          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        },
+      );
+
+      const user = this.users.find(u => u.id === decoded.sub && u.email === decoded.email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      if(user.refreshToken !== refreshToken){
+        throw new UnauthorizedException('Refresh token does not match');
+      }
+      const newAccessToken = await this.signAccessToken(user.id, user.email, user.fullName);
+      const newRefreshToken = await this.signRefreshToken(user.id, user.email, user.fullName);
+
+      user.accessToken = newAccessToken;
+      user.refreshToken = newRefreshToken;
+    } catch (error) {
+      throw new UnauthorizedException('Session expired. Please log in again.');
+    }
   }
 }
