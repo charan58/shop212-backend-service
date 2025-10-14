@@ -130,7 +130,8 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         message: 'Login successful',
-        token: 'mock-jwt-token',
+        accessToken: 'mock-jwt-token',
+        refreshToken: 'mock-jwt-token',
       });
     });
 
