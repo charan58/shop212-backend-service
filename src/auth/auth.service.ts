@@ -9,15 +9,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from '../dto/signup.dto';
 import { LoginDto } from '../dto/login.dto';
-import { User } from '../types/user.type';
+import { User as userType } from '../types/user.type'; // Removed to avoid conflict with entity import
 import { isValidEmail, isValidPhoneNumber } from '../common/utils/validators';
 import { generateId } from '../common/utils/generators';
 import { JwtPayload } from '../types/jwt-payload.type';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/entity/user.entity';
+
 @Injectable()
 export class AuthService {
-  private users: User[] = []; // Replace with real DB in production
-
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService
   ) { }
@@ -34,34 +38,38 @@ export class AuthService {
       throw new BadRequestException('Invalid email or phone number format');
     }
 
-    const existingUser = this.users.find(
-      (user) => user.email === email || user.phoneNumber === phoneNumber,
-    );
+    const existingUser = await this.userRepository.findOne({
+      where: [{email}, {phoneNumber}]
+    });
     if (existingUser) {
       throw new ConflictException('User already exists with this email or phone number');
     }
 
     const saltingRounds = parseInt(this.configService.get<string>('SALTING_ROUNDS') ?? '10');
     const hashedPassword = await bcrypt.hash(password, saltingRounds);
+
     const userId = generateId();
-    const accessToken = await this.signAccessToken(userId, email, fullName);
-    const refreshToken = await this.signRefreshToken(userId, email, fullName);
-    const newUser: User = {
+
+    const newUserInDb = this.userRepository.create({
       id: userId,
       fullName,
       email,
       phoneNumber,
-      password: hashedPassword,
-      accessToken,
-      refreshToken
-    };
+      password: hashedPassword
+    });
 
-    this.users.push(newUser);
+    await this.userRepository.save(newUserInDb);
+
+    const accessToken = await this.signAccessToken(userId, email, fullName);
+    const refreshToken = await this.signRefreshToken(userId, email, fullName);
+
+    newUserInDb.refreshToken = refreshToken;
+    await this.userRepository.save(newUserInDb);
 
     return {
       message: 'User signed up successfully',
       user: {
-        id: newUser.id,
+        id: newUserInDb.id,
       },
       accessToken,
       refreshToken
@@ -91,7 +99,7 @@ export class AuthService {
     const payload: JwtPayload = { sub: userId, email, fullName };
 
     const token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.getJwtRefreshExpiresIn()
     });
     return token;
@@ -101,12 +109,12 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { emailOrPhoneNumber, password } = loginDto;
 
-    let user: User | undefined;
+    let user: User | null = null;
 
     if (isValidEmail(emailOrPhoneNumber)) {
-      user = this.users.find((u) => u.email === emailOrPhoneNumber);
+      user = await this.userRepository.findOne({where :{email: emailOrPhoneNumber}});
     } else if (isValidPhoneNumber(emailOrPhoneNumber)) {
-      user = this.users.find((u) => u.phoneNumber === emailOrPhoneNumber);
+      user = await this.userRepository.findOne({where:{phoneNumber: emailOrPhoneNumber}})
     } else {
       throw new BadRequestException('Invalid email or phone number format');
     }
@@ -124,6 +132,8 @@ export class AuthService {
     const accessToken = await this.signAccessToken(user.id, user.email, user.fullName);
     const refreshToken = await this.signRefreshToken(user.id, user.email, user.fullName);
 
+    user.refreshToken = refreshToken;
+    await this.userRepository.save(user);
 
     return {
       message: 'Login successful',
@@ -141,7 +151,7 @@ export class AuthService {
         },
       );
 
-      const user = this.users.find(u => u.id === decoded.sub && u.email === decoded.email);
+      const user = await this.userRepository.findOne({where: {id: decoded.sub, email: decoded.email}});
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
       }
@@ -152,8 +162,13 @@ export class AuthService {
       const newAccessToken = await this.signAccessToken(user.id, user.email, user.fullName);
       const newRefreshToken = await this.signRefreshToken(user.id, user.email, user.fullName);
 
-      user.accessToken = newAccessToken;
+
       user.refreshToken = newRefreshToken;
+      await this.userRepository.save(user);
+      return{
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+      }
     } catch (error) {
       throw new UnauthorizedException('Session expired. Please log in again.');
     }
