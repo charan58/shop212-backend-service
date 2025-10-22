@@ -4,122 +4,111 @@ import { CartService } from './cart.service';
 import { CartItemDto } from 'src/dto/cart-item.dto';
 
 describe('CartController', () => {
-  let cartController: CartController;
+  let controller: CartController;
   let cartService: CartService;
 
   const mockCartService = {
-    saveCart: jest.fn(),
+    addToCart: jest.fn(),
     getCart: jest.fn(),
-    updateCartItem: jest.fn(),
     updateCart: jest.fn(),
     deleteCart: jest.fn(),
+    updateCartItemQuantity: jest.fn(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CartController],
-      providers: [{ provide: CartService, useValue: mockCartService }],
+      providers: [
+        {
+          provide: CartService,
+          useValue: mockCartService,
+        },
+      ],
     }).compile();
 
-    cartController = module.get<CartController>(CartController);
+    controller = module.get<CartController>(CartController);
     cartService = module.get<CartService>(CartService);
+  });
 
-    // Clear mocks before each test
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
-  const mockCartItem = (id: number): CartItemDto => ({
-    id,
-    productId: 100 + id,
-    title: `Product ${id}`,
-    price: 10.99 + id,
-    image: `image${id}.jpg`,
-    quantity: id * 2,
-  });
-
   it('should be defined', () => {
-    expect(cartController).toBeDefined();
+    expect(controller).toBeDefined();
   });
 
-  describe('saveCart', () => {
-    it('should call cartService.saveCart with cart items', async () => {
-      const cartItems: CartItemDto[] = [mockCartItem(1), mockCartItem(2)];
-      const expectedResult = {
-        success: true,
-        message: 'Cart saved successfully',
-        data: cartItems,
-      };
+  describe('addToCart', () => {
+    it('should call cartService.addToCart with userId assigned', async () => {
+      const dto: CartItemDto = { productId: 1, quantity: 2 } as any;
+      const userId = 123;
+      const result = { success: true };
+      mockCartService.addToCart.mockResolvedValue(result);
 
-      mockCartService.saveCart.mockReturnValue(expectedResult);
+      const response = await controller.addToCart(dto, userId);
 
-      const result = await cartController.saveCart(cartItems);
-      expect(result).toEqual(expectedResult);
-      expect(mockCartService.saveCart).toHaveBeenCalledWith(cartItems);
+      expect(cartService.addToCart).toHaveBeenCalledWith({ ...dto, userId });
+      expect(response).toEqual(result);
     });
   });
 
   describe('getCart', () => {
-    it('should return cart from cartService', async () => {
-      const mockCart = [mockCartItem(1)];
-      const expectedResult = {
-        success: true,
-        message: 'Cart fetched successfully',
-        data: mockCart,
-      };
+    it('should return user cart', async () => {
+      const userId = 123;
+      const result = { success: true, data: [] };
+      mockCartService.getCart.mockResolvedValue(result);
 
-      mockCartService.getCart.mockReturnValue(expectedResult);
+      const response = await controller.getCart(userId);
 
-      const result = await cartController.getCart();
-      expect(result).toEqual(expectedResult);
-      expect(mockCartService.getCart).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateCartItem', () => {
-    it('should update a cart item', async () => {
-      const updateData = { id: 1, quantity: 5 };
-      const updatedItem = {
-        success: true,
-        message: 'Cart item updated successfully',
-        data: { ...mockCartItem(1), quantity: 5 },
-      };
-
-      mockCartService.updateCartItem.mockReturnValue(updatedItem);
-
-      const result = await cartController.updateCartItem(updateData);
-      expect(result).toEqual(updatedItem);
-      expect(mockCartService.updateCartItem).toHaveBeenCalledWith(updateData);
+      expect(cartService.getCart).toHaveBeenCalledWith(userId);
+      expect(response).toEqual(result);
     });
   });
 
   describe('updateCart', () => {
-    it('should update the whole cart', async () => {
-      const updatedCart: CartItemDto[] = [mockCartItem(1), mockCartItem(2)];
+    it('should call cartService.updateCart with items and userId', async () => {
+      const userId = 123;
+      const items: CartItemDto[] = [
+        { productId: 1, quantity: 3 } as any,
+        { productId: 2, quantity: 1 } as any,
+      ];
+      const result = { success: true };
+      mockCartService.updateCart.mockResolvedValue(result);
 
-      const expectedResponse = {
-        success: true,
-        message: 'Cart updated successfully',
-      };
+      const response = await controller.updateCart(items, userId);
 
-      mockCartService.updateCart.mockReturnValue(expectedResponse);
-
-      const result = await cartController.updateCart(updatedCart);
-      expect(result).toEqual(expectedResponse);
-      expect(mockCartService.updateCart).toHaveBeenCalledWith(updatedCart);
+      expect(cartService.updateCart).toHaveBeenCalledWith(items, userId);
+      expect(response).toEqual(result);
     });
   });
 
   describe('deleteCart', () => {
-    it('should delete the cart', async () => {
-      const expectedResponse = {
-        success: true,
-        message: 'Cart deleted successfully',
-      };
-      mockCartService.deleteCart.mockReturnValue(expectedResponse);
+    it('should call cartService.deleteCart with userId', async () => {
+      const userId = 123;
+      const result = { success: true };
+      mockCartService.deleteCart.mockResolvedValue(result);
 
-      const result = await cartController.deleteCart();
-      expect(result).toEqual(expectedResponse);
-      expect(mockCartService.deleteCart).toHaveBeenCalled();
+      const response = await controller.deleteCart(userId);
+
+      expect(cartService.deleteCart).toHaveBeenCalledWith(userId);
+      expect(response).toEqual(result);
+    });
+  });
+
+  describe('updateCartItemQuantity', () => {
+    it('should call cartService.updateCartItemQuantity with merged data', async () => {
+      const userId = 123;
+      const updateData = { productId: 1, change: 1 };
+      const result = { success: true };
+      mockCartService.updateCartItemQuantity.mockResolvedValue(result);
+
+      const response = await controller.updateCartItemQuantity(updateData, userId);
+
+      expect(cartService.updateCartItemQuantity).toHaveBeenCalledWith({
+        ...updateData,
+        userId,
+      });
+      expect(response).toEqual(result);
     });
   });
 });

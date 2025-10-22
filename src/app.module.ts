@@ -6,6 +6,14 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { OrdersModule } from './orders/orders.module';
+import { UsersController } from './users/users.controller';
+import { UsersService } from './users/users.service';
+import { MailController } from './mail/mail.controller';
+import { MailService } from './mail/mail.service';
+import { MailModule } from './mail/mail.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -21,9 +29,13 @@ import { CartModule } from './cart/cart.module';
     }),
     AuthModule,
     ProductsModule,
-    CartModule
+    CartModule,
+    WishlistModule,
+    OrdersModule,
+    MailModule,
+    UsersModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController,  MailController],
+  providers: [AppService,  MailService],
 })
 export class AppModule {}

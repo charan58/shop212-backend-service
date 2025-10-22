@@ -1,0 +1,201 @@
+@baseUrl = http://localhost:4000
+
+###############################################
+# Health Check
+###############################################
+
+### Health check
+GET {{baseUrl}}/
+
+###############################################
+# Authentication APIs (Using Cookies)
+###############################################
+
+### Signup - User 1
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "firstName": "charan",
+  "lastName": "sulluru",
+  "email": "charan.sulluru@gmail.com",
+  "phoneNumber": "7569266637",
+  "password": "Charanchakri@123"
+}
+
+### Login - User 1 (Sets accessToken and refreshToken cookies)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "emailOrPhoneNumber": "charan.sulluru@gmail.com",
+  "password": "Charanchakri@123"
+}
+
+### Refresh Token (auto uses refreshToken cookie)
+POST {{baseUrl}}/auth/refresh
+
+### Change Password (requires valid accessToken cookie)
+POST {{baseUrl}}/auth/change-password
+Content-Type: application/json
+
+{
+  "currentPassword": "SecurePassword123!",
+  "newPassword": "NewSecurePass123!"
+}
+
+### Logout (clears cookies)
+POST {{baseUrl}}/auth/logout
+
+### Forgot Password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "charan.sulluru@gmail.com"
+}
+
+### Reset Password (replace with actual token received via email)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "REPLACE_WITH_RESET_TOKEN",
+  "newPassword": "SecurePasswordAfterReset123!"
+}
+
+### Get users/me
+GET {{baseUrl}}/users/me
+
+###############################################
+# Products APIs (Public)
+###############################################
+
+### Get All Products
+GET {{baseUrl}}/products/get-products
+
+###############################################
+# Cart APIs (Authenticated via cookies)
+###############################################
+
+### Add Item to Cart
+POST {{baseUrl}}/cart/add-to-cart
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "title": "Sample Product",
+  "price": 29.99,
+  "image": "https://example.com/product-image.jpg",
+  "quantity": 2
+}
+
+### Get User Cart
+GET {{baseUrl}}/cart/get-cart
+
+### Update Cart Items (Replace entire cart)
+PUT {{baseUrl}}/cart/update-cart
+Content-Type: application/json
+
+[
+  {
+    "productId": 1,
+    "title": "Product 1",
+    "price": 29.99,
+    "image": "https://example.com/product1.jpg",
+    "quantity": 2
+  },
+  {
+    "productId": 2,
+    "title": "Product 2",
+    "price": 19.99,
+    "image": "https://example.com/product2.jpg",
+    "quantity": 1
+  }
+]
+
+### Update Cart Item Quantity (Increase)
+PATCH {{baseUrl}}/cart/update-cart-item-quantity
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "change": 1
+}
+
+### Update Cart Item Quantity (Decrease)
+PATCH {{baseUrl}}/cart/update-cart-item-quantity
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "change": -1
+}
+
+### Delete Entire Cart
+DELETE {{baseUrl}}/cart/delete-cart
+
+###############################################
+# Wishlist APIs (Authenticated via cookies)
+###############################################
+
+### Add Item to Wishlist
+POST {{baseUrl}}/wishlist/add
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "title": "iPhone 15 Pro",
+  "price": 999.99,
+  "image": "https://example.com/iphone-15-pro.jpg"
+}
+
+### Get User Wishlist
+GET {{baseUrl}}/wishlist
+
+### Remove Item from Wishlist
+DELETE {{baseUrl}}/wishlist/remove/1
+
+###############################################
+# Order APIs (Authenticated via cookies)
+###############################################
+
+### Get All Orders
+GET {{baseUrl}}/orders/get-orders
+
+### Create Order
+POST {{baseUrl}}/orders/create-order
+Content-Type: application/json
+
+{
+  "productId": 2,
+  "title": "MacBook Air M2",
+  "price": 1199.99,
+  "image": "https://example.com/macbook-air-m2.jpg",
+  "quantity": 1
+}
+
+###############################################
+# Alternative User for Testing
+###############################################
+
+### Signup - User 2
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "jane.smith@example.com",
+  "phoneNumber": "+1987654321",
+  "password": "AnotherPassword456!"
+}
+
+### Login - User 2
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "emailOrPhoneNumber": "jane.smith@example.com",
+  "password": "AnotherPassword456!"
+}

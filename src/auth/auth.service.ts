@@ -16,6 +16,8 @@ import { JwtPayload } from '../types/jwt-payload.type';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entity/user.entity';
+import { randomUUID } from 'crypto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +25,8 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private readonly configService: ConfigService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) { }
 
   async signup(signupDto: SignupDto) {
@@ -66,11 +69,12 @@ export class AuthService {
     newUserInDb.refreshToken = refreshToken;
     await this.userRepository.save(newUserInDb);
 
+    // Send welcome email (don't await to avoid blocking signup)
+    this.mailService.sendWelcomeEmail(email, fullName).catch(error => {
+      console.error('Failed to send welcome email:', error);
+    });
+
     return {
-      message: 'User signed up successfully',
-      user: {
-        id: newUserInDb.id,
-      },
       accessToken,
       refreshToken
     };
@@ -136,7 +140,6 @@ export class AuthService {
     await this.userRepository.save(user);
 
     return {
-      message: 'Login successful',
       accessToken,
       refreshToken
     };
@@ -171,6 +174,82 @@ export class AuthService {
       }
     } catch (error) {
       throw new UnauthorizedException('Session expired. Please log in again.');
+    }
+  }
+
+  async forgotPassword(email: string){
+    const user = await this.userRepository.findOne({where: {email}});
+
+    if(!user){
+      return {
+        success: true,
+        message: 'If your email exists, a reset link has been sent'
+      }
+    }
+
+    const resetToken = randomUUID();
+    const resetTokenExpiry = new Date(Date.now()+ 3600*1000);
+
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
+
+    await this.userRepository.save(user);
+
+    // send to user email
+    await this.mailService.sendPasswordResetEmail(user.email, user.fullName, resetToken);
+    return{
+      success: true,
+      message: 'If your email exists, a reset link has been sent'
+    }
+  }
+
+  async resetPassword(resetPasswordDto: {token: string, newPassword: string}){
+    const { token, newPassword } = resetPasswordDto;
+    const user = await this.userRepository.findOne({where: {resetToken: token}});
+
+    if(
+      !user ||
+      !user.resetTokenExpiry ||
+      user.resetTokenExpiry < new Date()
+    ){
+      throw new BadRequestException('Invalid Operation');
+    }
+
+    const saltingRounds = parseInt(this.configService.get<string>("SALTING_ROUNDS") ?? "10");
+    const hashedPassword = await bcrypt.hash(newPassword, saltingRounds);
+
+    user.password =  hashedPassword;
+
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+
+    await this.userRepository.save(user);
+    return{
+      success: true,
+      message: "Password reset successful"
+    }
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string){
+    const user = await this.userRepository.findOne({where: {id: userId}});
+
+    if(!user){
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if(!isPasswordValid){
+      throw new BadRequestException('Incorrect password');
+    }
+
+    const saltingRounds = parseInt(this.configService.get<string>("SALTING_ROUNDS") ?? "10");
+    user.password = await bcrypt.hash(newPassword, saltingRounds);
+
+    await this.userRepository.save(user);
+    return{
+      success: true,
+      message: "Password changed successfully"
     }
   }
 }

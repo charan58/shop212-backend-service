@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { HealthDto } from './dto/health.dto';
 
 @Injectable()
 export class AppService {
-  getHealth(): string {
-    return 'Backend is UP and Running!';
+  getHealth(): HealthDto{
+    return {
+      status: true,
+      message:'Backend is UP and Running!'
+    };
   }
 }

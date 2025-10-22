@@ -1,7 +1,7 @@
 import {Entity, Column, PrimaryColumn} from 'typeorm';
 
-@Entity("cart_items")
-export class CartItem{
+@Entity("wishlist_items")
+export class WishlistItem{
     @PrimaryColumn()
     id:number;
 
@@ -15,11 +15,9 @@ export class CartItem{
     title: string;
 
     @Column({nullable: false, type:'decimal', precision: 10, scale:2})
-	price: number;
+    price: number;
 
     @Column({nullable: false})
-	image?: string;
+    image?: string;
 
-    @Column({nullable: false})
-    quantity: number;
 }

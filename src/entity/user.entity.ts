@@ -1,7 +1,7 @@
-import {Entity, Column, PrimaryColumn} from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
-export class User{
+export class User {
 
     @PrimaryColumn()
     id: number;
@@ -9,15 +9,21 @@ export class User{
     @Column()
     fullName: string;
 
-    @Column({unique: true})
+    @Column({ unique: true })
     email: string;
 
-    @Column({unique: true})
+    @Column({ unique: true })
     phoneNumber: string;
 
     @Column()
     password: string;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     refreshToken?: string
+
+    @Column({ type: 'text', nullable: true })
+    resetToken: string | null;
+
+    @Column({ type: 'datetime', nullable: true })
+    resetTokenExpiry: Date | null;
 }
