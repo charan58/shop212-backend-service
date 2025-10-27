@@ -1,9 +1,10 @@
-import {Entity, Column, PrimaryColumn} from 'typeorm';
+import {Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, Unique} from 'typeorm';
 
 @Entity("wishlist_items")
+@Unique(["userId", "productId"])
 export class WishlistItem{
-    @PrimaryColumn()
-    id:number;
+    @PrimaryGeneratedColumn()
+    wishListId: number;
 
     @Column({nullable: false})
     userId: number;
@@ -19,5 +20,8 @@ export class WishlistItem{
 
     @Column({nullable: false})
     image?: string;
+
+    @Column()
+    description: string;
 
 }

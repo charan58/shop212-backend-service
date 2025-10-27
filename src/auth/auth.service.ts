@@ -70,9 +70,9 @@ export class AuthService {
     await this.userRepository.save(newUserInDb);
 
     // Send welcome email (don't await to avoid blocking signup)
-    this.mailService.sendWelcomeEmail(email, fullName).catch(error => {
-      console.error('Failed to send welcome email:', error);
-    });
+    // this.mailService.sendWelcomeEmail(email, fullName).catch(error => {
+    //   console.error('Failed to send welcome email:', error);
+    // });
 
     return {
       accessToken,

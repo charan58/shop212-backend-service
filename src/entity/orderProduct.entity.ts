@@ -1,10 +1,13 @@
-import { Entity, Column, PrimaryColumn} from "typeorm";
+import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn} from "typeorm";
 @Entity("order_products")
 export class OrderProduct {
-    @PrimaryColumn()
-    orderId: number;
+    @PrimaryGeneratedColumn()
+    id: number;
+    
+    @Column({ nullable: false })
+    orderId: string;
 
-    @Column()
+    @Column({ nullable: false })
     productId: number;
 
     @Column()
@@ -21,4 +24,7 @@ export class OrderProduct {
 
     @Column({ nullable: true })
     imageUrl?: string;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    totalAmount: number;
 }

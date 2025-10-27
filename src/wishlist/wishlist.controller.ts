@@ -22,6 +22,11 @@ export class WishlistController {
     @User('id') userId: number,
     @Body() createWishlistDto: WishListItemDto,
   ) {
+    const {id} = createWishlistDto;
+    if (!id) {
+      throw new Error('Product ID is required');
+    }
+    createWishlistDto.productId = id;
     return this.wishlistService.addToWishlist({
       ...createWishlistDto,
       userId,

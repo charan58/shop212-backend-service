@@ -1,5 +1,5 @@
 export class WishListItemDto{
-    // id: number;
+    id?: number;
     userId?: number;
     productId: number;
     title: string;

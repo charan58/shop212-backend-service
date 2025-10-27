@@ -20,14 +20,24 @@ export class OrdersService {
     }
 
     async createOrder(userId: number, orderProductDto: OrderProductDto) {
-        const orderProduct = this.orderProductRepository.create({
-            ...orderProductDto,
+        const {orderId, items, totalAmount} = orderProductDto;
+
+        const orderEntities = items.map(item=> this.orderProductRepository.create({
+            orderId,
             userId,
-        });
-        await this.orderProductRepository.save(orderProduct);
+            productId: item.productId,
+            title: item.title,
+            quantity: item.quantity,
+            price: item.price,
+            imageUrl: item.imageUrl,
+            totalAmount: item.price* item.quantity
+        }))
+
+        await this.orderProductRepository.save(orderEntities);
+
         return{
             success: true,
-            message: "Order created successfully",
+            message: "Order created successfully."
         }
     }
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CartItemDto } from 'src/dto/cart-item.dto';
+import type { CartItemDto } from 'src/dto/cart-item.dto';
 import { CartItem } from 'src/entity/cartItem.entity';
 
 @Injectable()
@@ -16,9 +16,9 @@ export class CartService {
     const { userId, productId, quantity } = cartItemDto;
 
     const existingItem = await this.cartRepository.findOne({
-      where: { userId, productId },
+      where: { userId, productId }, 
     });
-
+    
     if (existingItem) {
       existingItem.quantity += quantity;
       const updatedItem = await this.cartRepository.save(existingItem);
@@ -94,6 +94,20 @@ export class CartService {
     return {
       success: true,
       message: 'Cart deleted successfully',
+    };
+  }
+
+  async deleteCartItem(productId: number){
+    const existingItem = await this.cartRepository.findOne({ where: { productId } });
+    if (!existingItem) {
+      throw new NotFoundException('Cart item not found');
+    }
+
+    await this.cartRepository.remove(existingItem);
+
+    return {
+      success: true,
+      message: 'Cart item deleted successfully',
     };
   }
 

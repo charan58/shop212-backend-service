@@ -21,7 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^2.0.2",
+    "@nestjs-modules/mailer": "^2.0.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -55,7 +55,7 @@
     "@types/nodemailer": "^6.4.20",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
-    "cpx": "^1.5.0",
+    "cpx": "^1.2.1",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

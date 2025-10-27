@@ -1,7 +1,11 @@
 export class OrderProductDto {
-    productId: number;
-    title: string;
-    quantity: number;
-    price: number;
-    imageUrl?: string;
+    orderId: string;
+    items:{
+        productId: number,
+        title: string,
+        quantity: number,
+        price: number,
+        imageUrl?: string
+    }[];
+    totalAmount: number;
 }

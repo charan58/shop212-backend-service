@@ -13,7 +13,6 @@ export class WishlistService {
 
     async addToWishlist(wishlistItemDto: WishListItemDto){
         const {userId, productId } = wishlistItemDto;
-
         const existingItem = await this.wishlistRepository.findOne({
             where: {userId, productId}
         });

@@ -5,7 +5,7 @@
 ###############################################
 
 ### Health check
-GET {{baseUrl}}/
+GET {{baseUrl}}/health
 
 ###############################################
 # Authentication APIs (Using Cookies)
@@ -30,6 +30,15 @@ Content-Type: application/json
 {
   "emailOrPhoneNumber": "charan.sulluru@gmail.com",
   "password": "Charanchakri@123"
+}
+
+### Login - User 1 (Sets accessToken and refreshToken cookies)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "emailOrPhoneNumber": "brijesh.poosa@gmail.com",
+  "password": "Brijesh@123"
 }
 
 ### Refresh Token (auto uses refreshToken cookie)
@@ -83,7 +92,7 @@ POST {{baseUrl}}/cart/add-to-cart
 Content-Type: application/json
 
 {
-  "productId": 1,
+  "id": 1,
   "title": "Sample Product",
   "price": 29.99,
   "image": "https://example.com/product-image.jpg",
@@ -154,7 +163,7 @@ Content-Type: application/json
 GET {{baseUrl}}/wishlist
 
 ### Remove Item from Wishlist
-DELETE {{baseUrl}}/wishlist/remove/1
+DELETE {{baseUrl}}/wishlist/remove/2
 
 ###############################################
 # Order APIs (Authenticated via cookies)
